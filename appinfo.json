@@ -1,0 +1,30 @@
+{
+    "versionLabel": "1.0",
+    "uuid": "07b4be5b-2ecc-4fcd-88b4-90f18d195045",
+    "appKeys": {},
+    "longName": "Simple Info",
+    "versionCode": 1,
+    "capabilities": [
+        ""
+    ],
+    "shortName": "Simple Info",
+    "companyName": "kgutwin",
+    "watchapp": {
+        "watchface": true
+    },
+    "resources": {
+        "media": [
+            {
+                "type": "png",
+                "name": "IMAGE_WX_SUN",
+                "file": "images/sun-all.png"
+            },
+            {
+                "menuIcon": true,
+                "type": "png",
+                "name": "MENU_ICON_SIMPLEINFO",
+                "file": "images/menu_icon_simpleinfo.png"
+            }
+        ]
+    }
+}
