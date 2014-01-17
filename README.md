@@ -1,0 +1,4 @@
+simpleInfo
+==========
+
+Simple Info watchface
