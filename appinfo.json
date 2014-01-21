@@ -1,11 +1,14 @@
 {
     "versionLabel": "1.0",
     "uuid": "07b4be5b-2ecc-4fcd-88b4-90f18d195045",
-    "appKeys": {},
+    "appKeys": {
+        "WX_CUR_TEMP": 1,
+        "WX_CUR_ICON": 2
+    },
     "longName": "Simple Info",
     "versionCode": 1,
     "capabilities": [
-        ""
+        "location"
     ],
     "shortName": "Simple Info",
     "companyName": "kgutwin",
