@@ -7,6 +7,7 @@ Layer *line_layer;
 
 GBitmap *wx_image;
 BitmapLayer *wx_image_layer;
+TextLayer *text_temp_layer;
 
 void line_layer_update_callback(Layer *layer, GContext* ctx) {
 	graphics_context_set_fill_color(ctx, GColorWhite);
@@ -61,16 +62,9 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	int frame = tick_time->tm_sec % 10;
 	
-	//Layer *wx_image_layer_layer = bitmap_layer_get_layer(wx_image_layer);
-	//GRect bounds = layer_get_bounds(wx_image_layer_layer);
-	//bounds.origin.x = frame * -20;
-	//bounds.size.w = 40 - (bounds.origin.x * 2);
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", bounds.origin.x, bounds.origin.y, bounds.size.w, bounds.size.h);
-	//layer_set_bounds(wx_image_layer_layer, bounds);
-
 	wx_image->bounds.origin.x = frame * 40;
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", wx_image->bounds.origin.x, wx_image->bounds.origin.y, 
-			wx_image->bounds.size.w, wx_image->bounds.size.h);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", wx_image->bounds.origin.x, wx_image->bounds.origin.y, 
+	//		wx_image->bounds.size.w, wx_image->bounds.size.h);
 	bitmap_layer_set_bitmap(wx_image_layer, wx_image);
 	Layer *wx_image_layer_layer = bitmap_layer_get_layer(wx_image_layer);
 	layer_mark_dirty(wx_image_layer_layer);
@@ -118,13 +112,19 @@ void handle_init(void) {
 	wx_image_layer = bitmap_layer_create(GRect(8, 18, 40, 40));
 	wx_image->bounds.origin.x = 0;
 	wx_image->bounds.size.w = 40;
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", wx_image->bounds.origin.x, wx_image->bounds.origin.y, 
-			wx_image->bounds.size.w, wx_image->bounds.size.h);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", wx_image->bounds.origin.x, wx_image->bounds.origin.y, 
+	//		wx_image->bounds.size.w, wx_image->bounds.size.h);
 	bitmap_layer_set_bitmap(wx_image_layer, wx_image);
 	bitmap_layer_set_alignment(wx_image_layer, GAlignCenter);
 	layer_add_child(window_layer, bitmap_layer_get_layer(wx_image_layer));
 	
-	//tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
+	text_temp_layer = text_layer_create(GRect(58, 18, 144-58, 40));
+	text_layer_set_text_color(text_temp_layer, GColorWhite);
+	text_layer_set_background_color(text_temp_layer, GColorClear);
+	text_layer_set_font(text_temp_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+	text_layer_set_text(text_temp_layer, "31°");
+	layer_add_child(window_layer, text_layer_get_layer(text_temp_layer));
+	
 	tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
 
 	handle_minute_tick(NULL, YEAR_UNIT);
