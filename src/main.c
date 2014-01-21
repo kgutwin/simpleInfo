@@ -10,19 +10,36 @@ BitmapLayer *wx_image_layer;
 
 void line_layer_update_callback(Layer *layer, GContext* ctx) {
 	graphics_context_set_fill_color(ctx, GColorWhite);
-	graphics_fill_rect(ctx, layer_get_bounds(layer), 0, GCornerNone);
+	GRect bounds = layer_get_bounds(layer);
+	BatteryChargeState bat = battery_state_service_peek();
+	// draw half height bar
+	bounds.size.h = 1;
+	graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+	// draw full height bar
+	bounds.size.h = 2;
+	bounds.size.w = (140 * bat.charge_percent) / 100;
+	graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 }
 
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
+	if (tick_time == NULL) {
+		time_t now = time(NULL);
+		tick_time = localtime(&now);
+	}
+	
 	// Need to be static because they're used by the system later.
 	static char time_text[] = "00:00";
 	static char date_text[] = "Xxxxxxxxx 00";
 
 	char *time_format;
 
-	// TODO: Only update the date when it's changed.
-	strftime(date_text, sizeof(date_text), "%B %e", tick_time);
-	text_layer_set_text(text_date_layer, date_text);
+	if ((tick_time->tm_hour == 0 && 
+		 tick_time->tm_min == 0 && 
+		 tick_time->tm_sec <= 5) ||
+		units_changed == YEAR_UNIT) {
+		strftime(date_text, sizeof(date_text), "%B %e", tick_time);
+		text_layer_set_text(text_date_layer, date_text);
+	}
 
 	if (clock_is_24h_style()) {
 		time_format = "%R";
@@ -44,20 +61,23 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	int frame = tick_time->tm_sec % 10;
 	
+	//Layer *wx_image_layer_layer = bitmap_layer_get_layer(wx_image_layer);
+	//GRect bounds = layer_get_bounds(wx_image_layer_layer);
+	//bounds.origin.x = frame * -20;
+	//bounds.size.w = 40 - (bounds.origin.x * 2);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", bounds.origin.x, bounds.origin.y, bounds.size.w, bounds.size.h);
+	//layer_set_bounds(wx_image_layer_layer, bounds);
+
+	wx_image->bounds.origin.x = frame * 40;
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", wx_image->bounds.origin.x, wx_image->bounds.origin.y, 
+			wx_image->bounds.size.w, wx_image->bounds.size.h);
+	bitmap_layer_set_bitmap(wx_image_layer, wx_image);
 	Layer *wx_image_layer_layer = bitmap_layer_get_layer(wx_image_layer);
-	GRect bounds = layer_get_bounds(wx_image_layer_layer);
-	bounds.origin.x = frame * -40;
-	// this seems to be necessary in order to keep the window the right
-	// size. However, it stops displaying the image midway through the
-	// animation...
-	bounds.size.w = 40 - (bounds.origin.x * 2);
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", bounds.origin.x, bounds.origin.y, bounds.size.w, bounds.size.h);
-	layer_set_bounds(wx_image_layer_layer, bounds);
+	layer_mark_dirty(wx_image_layer_layer);
 	
-	// need to figure out how to trigger this less often
-	//if (tick_time->tm_sec == 0) {
+	if (tick_time->tm_sec <= 1) {
 		handle_minute_tick(tick_time, units_changed);
-	//}
+	}
 }
 
 void handle_deinit(void) {
@@ -94,15 +114,20 @@ void handle_init(void) {
 	layer_set_update_proc(line_layer, line_layer_update_callback);
 	layer_add_child(window_layer, line_layer);
 
-	wx_image = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_WX_SUN);
-	wx_image_layer = bitmap_layer_create(GRect(8, 8, 400, 40));
+	wx_image = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_WX_SNOW);
+	wx_image_layer = bitmap_layer_create(GRect(8, 18, 40, 40));
+	wx_image->bounds.origin.x = 0;
+	wx_image->bounds.size.w = 40;
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "Bounds: %d %d %d %d", wx_image->bounds.origin.x, wx_image->bounds.origin.y, 
+			wx_image->bounds.size.w, wx_image->bounds.size.h);
 	bitmap_layer_set_bitmap(wx_image_layer, wx_image);
-	bitmap_layer_set_alignment(wx_image_layer, GAlignTopLeft);
+	bitmap_layer_set_alignment(wx_image_layer, GAlignCenter);
 	layer_add_child(window_layer, bitmap_layer_get_layer(wx_image_layer));
 	
 	//tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 	tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
-	// TODO: Update display here to avoid blank display on launch?
+
+	handle_minute_tick(NULL, YEAR_UNIT);
 }
 
 

@@ -16,6 +16,11 @@
         "media": [
             {
                 "type": "png",
+                "name": "IMAGE_WX_SNOW",
+                "file": "images/snow-all.png"
+            },
+            {
+                "type": "png",
                 "name": "IMAGE_WX_SUN",
                 "file": "images/sun-all.png"
             },
