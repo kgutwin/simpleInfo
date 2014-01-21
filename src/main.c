@@ -9,6 +9,8 @@ GBitmap *wx_image;
 BitmapLayer *wx_image_layer;
 TextLayer *text_temp_layer;
 
+uint8_t snooze_ticks_remain;
+
 void line_layer_update_callback(Layer *layer, GContext* ctx) {
 	graphics_context_set_fill_color(ctx, GColorWhite);
 	GRect bounds = layer_get_bounds(layer);
@@ -72,6 +74,30 @@ void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	if (tick_time->tm_sec <= 1) {
 		handle_minute_tick(tick_time, units_changed);
 	}
+	
+	// handle snooze
+	if (snooze_ticks_remain == 0) {
+		if (tick_time->tm_min == 0 && tick_time->tm_sec <= 1) {
+			if (tick_time->tm_hour == 0) {
+				//APP_LOG(APP_LOG_LEVEL_DEBUG, "Snooze");
+				tick_timer_service_unsubscribe();
+				tick_timer_service_subscribe(MINUTE_UNIT, handle_second_tick);
+			} else if (tick_time->tm_hour == 6) {
+				//APP_LOG(APP_LOG_LEVEL_DEBUG, "Wake up");
+				tick_timer_service_unsubscribe();
+				tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
+			}
+		}
+	} else if (snooze_ticks_remain == 1) {
+		if (tick_time->tm_hour < 6) {
+			//APP_LOG(APP_LOG_LEVEL_DEBUG, "Snooze timeout");
+			tick_timer_service_unsubscribe();
+			tick_timer_service_subscribe(MINUTE_UNIT, handle_second_tick);
+		}
+		snooze_ticks_remain--;
+	} else {
+		snooze_ticks_remain--;
+	}
 }
 
 void handle_deinit(void) {
@@ -125,6 +151,7 @@ void handle_init(void) {
 	text_layer_set_text(text_temp_layer, "31°");
 	layer_add_child(window_layer, text_layer_get_layer(text_temp_layer));
 	
+	snooze_ticks_remain = 30;
 	tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
 
 	handle_minute_tick(NULL, YEAR_UNIT);
