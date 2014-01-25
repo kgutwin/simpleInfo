@@ -19,12 +19,52 @@
         "media": [
             {
                 "type": "png",
+                "name": "IMAGE_WX_WIND",
+                "file": "images/wind-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_SLEET",
+                "file": "images/sleet-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_RAIN",
+                "file": "images/rain-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_PARTLY_CLOUDY_DAY",
+                "file": "images/partsun-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_PARTLY_CLOUDY_NIGHT",
+                "file": "images/partmoon-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_CLEAR_NIGHT",
+                "file": "images/moon-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_FOG",
+                "file": "images/fog-all.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_WX_CLOUDY",
+                "file": "images/cloud-all.png"
+            },
+            {
+                "type": "png",
                 "name": "IMAGE_WX_SNOW",
                 "file": "images/snow-all.png"
             },
             {
                 "type": "png",
-                "name": "IMAGE_WX_SUN",
+                "name": "IMAGE_WX_CLEAR_DAY",
                 "file": "images/sun-all.png"
             },
             {

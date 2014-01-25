@@ -65,7 +65,7 @@ Pebble.addEventListener(
 Pebble.addEventListener(
 	"appmessage",
 	function(e) {
-		window.navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
+		navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 		console.log(e.type);
 		console.log(e.payload.temperature);
 		console.log("message!");
