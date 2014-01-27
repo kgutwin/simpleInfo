@@ -82,21 +82,90 @@ function locationError(err) {
 
 var locationOptions = { "timeout": 15000, "maximumAge": 60000 }; 
 
-var weatherIter = 0;
+//var weatherIter = 0;
 function tryWeather(iter) {
 	console.log("tryWeather iter " + iter);
-	if (iter === 0) iter = weatherIter;
-	if (iter == weatherIter) {
+	//if (iter === 0) iter = weatherIter;
+	//if (iter == weatherIter) {
 		navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
-		setTimeout(function() { tryWeather( iter+1 ); }, 120000);
-		weatherIter = iter + 1;
+		//setTimeout(function() { tryWeather( iter+1 ); }, 120000);
+		//weatherIter = iter + 1;
+	//}
+}
+
+var lastCalendar = {
+	"calCurText": "",
+	"calCurIcon": -1,
+	"calCurStart": 0
+};
+
+function sendCalendar(icon, text, start) {
+	console.log("sendCalendar " + icon + " " + text + " " + start);
+	if (icon != lastCalendar.calCurIcon || text != lastCalendar.calCurText || start != lastCalendar.calCurStart) {
+		lastCalendar.calCurText = text;
+		lastCalendar.calCurIcon = icon;
+		lastCalendar.calCurStart = start;
+		console.log("sending " + JSON.stringify(lastCalendar));
+		Pebble.sendAppMessage(lastCalendar);
 	}
+}
+
+function renderTime(s) {
+	var date = new Date(s * 1000);
+	var hh = date.getHours();
+	var mm = date.getMinutes();
+	var ampm = "a";
+	if (hh > 12) {
+		ampm = "p";
+		hh -= 12;
+	}
+	if (mm < 10) { mm = "0" + mm; }
+	return hh + ":" + mm + ampm;
+}
+
+function tryCalendar() {
+	var response;
+	var req = new XMLHttpRequest();
+	console.log("requesting biib.json");
+	req.open('GET', "http://www.gutwin.org/ebw/biib.json", true);
+	req.onload = function(e) {
+		if (req.readyState == 4) {
+			if(req.status == 200) {
+				console.log(req.responseText);
+				response = JSON.parse(req.responseText);
+				var best = { "icon":-1, "text": "", "start": 2147483647 };
+				for (var i = 0; i < response.mtgs.length; i++) {
+					var o = response.mtgs[i];
+					var now = new Date().getTime() / 1000;
+					console.log("now " + now + " " + (o.start - (120*60)) + " " + (o.start + (15*60)));
+					if ((o.start + (15 * 60)) > (now) && 
+						(o.start - (120 * 60)) < (now) &&
+						(o.start < best.start)) {
+						best.start = o.start;
+						best.text = o.subject + "\n" + renderTime(o.start) + "-" + o.location;
+						if (o.icon == "lync") {
+							best.icon = 1;
+						} else {
+							best.icon = 0;
+						}
+					}
+				}
+				sendCalendar(best.icon, best.text, best.start);
+			} else {
+				console.log("Error " + req.status);
+				sendCalendar(-1, "", 0);
+			}
+		} else {
+			console.log("readyState " + req.readyState);
+		}
+	};
+	req.send(null);
 }
 
 Pebble.addEventListener(
 	"ready",
 	function(e) {
-		console.log("connect!" + e.ready);
+		console.log("connect! " + e.ready);
 	});
 
 Pebble.addEventListener(
@@ -106,6 +175,9 @@ Pebble.addEventListener(
 		console.log(JSON.stringify(e));
 		if (e.payload.wxGet) {
 			tryWeather(0);
+		}
+		if (e.payload.calGet) {
+			tryCalendar();
 		}
 	});
 

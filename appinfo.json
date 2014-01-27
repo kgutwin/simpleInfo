@@ -2,10 +2,14 @@
     "versionLabel": "1.0",
     "uuid": "07b4be5b-2ecc-4fcd-88b4-90f18d195045",
     "appKeys": {
-        "wxCurAlerts": 3,
-        "wxGet": 4,
-        "wxCurTemp": 1,
-        "wxCurIcon": 2
+        "calCurText": 21,
+        "wxCurTemp": 11,
+        "wxCurIcon": 12,
+        "wxGet": 14,
+        "calCurStart": 23,
+        "calCurIcon": 22,
+        "calGet": 24,
+        "wxCurAlerts": 13
     },
     "longName": "Simple Info",
     "versionCode": 1,
@@ -19,6 +23,16 @@
     },
     "resources": {
         "media": [
+            {
+                "type": "png",
+                "name": "IMAGE_CAL_MEETING",
+                "file": "images/meeting-icon.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_CAL_LYNC",
+                "file": "images/lync-icon.png"
+            },
             {
                 "type": "png",
                 "name": "IMAGE_WX_UNKNOWN",
