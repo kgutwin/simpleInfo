@@ -1,5 +1,8 @@
 #include "pebble.h"
 
+#undef APP_LOG
+#define APP_LOG(level, fmt, args...)  ;
+	
 Window *window;
 TextLayer *text_date_layer;
 TextLayer *text_time_layer;
@@ -9,10 +12,12 @@ GBitmap *wx_image;
 BitmapLayer *wx_image_layer;
 uint8_t wx_image_layer_animate;
 TextLayer *text_temp_layer;
+char text_temp_layer_value[8];
 
 GBitmap *cal_image;
 BitmapLayer *cal_image_layer;
 TextLayer *text_cal_info_layer;
+char text_cal_info_layer_value[64];
 
 uint8_t snooze_ticks_remain;
 
@@ -21,7 +26,7 @@ static AppSync sync;
 static uint8_t sync_buffer[SYNC_BUFFER_SIZE];
 
 AppTimer *wx_resync_timer;
-#define WX_RESYNC_TIMEOUT_MS (2 * 60 * 1000)
+#define WX_RESYNC_TIMEOUT_MS (1 * 60 * 1000)
 	
 enum messages_e {
 	MSG_WXCURTEMP = 11,
@@ -105,10 +110,18 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 
 	text_layer_set_text(text_time_layer, time_text);
 	
+	// request calendar updates on the 15 minute mark
 	if ((tick_time->tm_min % 15) == 0) {
 		request_update(false, true);
 	}
+	// request weather updates on the two minute mark
+	if ((tick_time->tm_min % 2) == 0) {
+		if (layer_get_hidden(bitmap_layer_get_layer(cal_image_layer)))
+			request_update(true, false);
+	}
 }
+
+static int last_minute = -1;
 
 void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	if (wx_image_layer_animate) {
@@ -118,7 +131,8 @@ void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 		layer_mark_dirty(wx_image_layer_layer);
 	}
 	
-	if (tick_time->tm_sec <= 1) {
+	if (tick_time->tm_min != last_minute) {
+		last_minute = tick_time->tm_min;
 		handle_minute_tick(tick_time, units_changed);
 	}
 	
@@ -148,8 +162,12 @@ void handle_deinit(void) {
 	tick_timer_service_unsubscribe();
 	gbitmap_destroy(wx_image);
 	bitmap_layer_destroy(wx_image_layer);
+	text_layer_destroy(text_temp_layer);
 	text_layer_destroy(text_date_layer);
 	text_layer_destroy(text_time_layer);
+	gbitmap_destroy(cal_image);
+	bitmap_layer_destroy(cal_image_layer);
+	text_layer_destroy(text_cal_info_layer);
 	layer_destroy(line_layer);
 	window_destroy(window);
 }
@@ -193,7 +211,7 @@ void handle_init(void) {
 	layer_set_hidden(bitmap_layer_get_layer(cal_image_layer), true);
 	layer_add_child(window_layer, bitmap_layer_get_layer(cal_image_layer));
 	
-	text_cal_info_layer = text_layer_create(GRect(58, 8, 300, 60));
+	text_cal_info_layer = text_layer_create(GRect(58, 4, 300, 60));
 	text_layer_set_text_color(text_cal_info_layer, GColorWhite);
 	text_layer_set_background_color(text_cal_info_layer, GColorClear);
 	text_layer_set_font(text_cal_info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
@@ -219,13 +237,6 @@ void request_update(uint8_t wx, uint8_t cal) {
 	dict_write_end(iter);
 
 	app_message_outbox_send();
-}
-
-void wx_resync_timer_handler(void *data) {
-	app_timer_reschedule(wx_resync_timer, WX_RESYNC_TIMEOUT_MS);
-
-	if (layer_get_hidden(bitmap_layer_get_layer(cal_image_layer)))
-		request_update(true, false);
 }
 
 #define THREE_COMP(x,y) if((x)>(y))return 1;if((x)<(y))return -1;
@@ -260,10 +271,31 @@ int8_t tuple_compare(const Tuple* a, const Tuple* b) {
 	return 0;
 }
 
+void tuple_log(const Tuple* t) {
+	switch (t->type) {
+		case TUPLE_CSTRING:
+			APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu cstring:'%s'", t->key, t->value->cstring);
+			break;
+		case TUPLE_BYTE_ARRAY:
+			APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu bytearray len:%d", t->key, t->length);
+			break;
+		case TUPLE_INT:
+			if (t->length == 4) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int32:%ld", t->key, t->value->int32); }
+			if (t->length == 2) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int16:%d", t->key, t->value->int16); }
+			if (t->length == 1) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int8:%d", t->key, t->value->int8); }
+			break;
+		case TUPLE_UINT:
+			if (t->length == 4) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int32:%lu", t->key, t->value->uint32); }
+			if (t->length == 2) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int16:%u", t->key, t->value->uint16); }
+			if (t->length == 1) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int8:%u", t->key, t->value->uint8); }
+			break;
+	}
+}
+
 static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, const Tuple* old_tuple, void* context) {
 	if (old_tuple != NULL && tuple_compare(new_tuple, old_tuple) == 0)
 		return;
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "sync %lu %ld %s", key, new_tuple->value->int32, new_tuple->value->cstring);
+	tuple_log(new_tuple);
 	switch (key) {
 		case MSG_WXCURICON:
 			if (wx_image) gbitmap_destroy(wx_image);
@@ -275,11 +307,12 @@ static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tup
 			break;
 		
 		case MSG_WXCURTEMP:
-			text_layer_set_text(text_temp_layer, new_tuple->value->cstring);
+			strcpy(text_temp_layer_value, new_tuple->value->cstring);
+			text_layer_set_text(text_temp_layer, text_temp_layer_value);
 			break;
 		
 		case MSG_CALCURICON:
-			if (new_tuple->value->int8 > 0) {
+			if (new_tuple->value->int8 >= 0) {
 				APP_LOG(APP_LOG_LEVEL_DEBUG, "enabling calendar icon");
 				if (cal_image) gbitmap_destroy(cal_image);
 				cal_image = gbitmap_create_with_resource(cal_image_map[new_tuple->value->int8]);
@@ -293,7 +326,8 @@ static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tup
 			break;
 		
 		case MSG_CALCURTEXT:
-			text_layer_set_text(text_cal_info_layer, new_tuple->value->cstring);
+			strcpy(text_cal_info_layer_value, new_tuple->value->cstring);
+			text_layer_set_text(text_cal_info_layer, text_cal_info_layer_value);
 			if (strcmp("", new_tuple->value->cstring) == 0) {
 				layer_set_hidden(text_layer_get_layer(text_cal_info_layer), true);
 				layer_set_hidden(text_layer_get_layer(text_temp_layer), false);
@@ -326,7 +360,6 @@ void app_message_init() {
 	app_message_open(sizeof(sync_buffer), sizeof(sync_buffer));
 	// send initial weather request
 	request_update(true, true);
-	wx_resync_timer = app_timer_register(WX_RESYNC_TIMEOUT_MS, wx_resync_timer_handler, NULL);
 }
 
 void app_message_deinit() {

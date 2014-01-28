@@ -100,12 +100,12 @@ var lastCalendar = {
 };
 
 function sendCalendar(icon, text, start) {
-	console.log("sendCalendar " + icon + " " + text + " " + start);
+	//console.log("sendCalendar " + icon + " " + text + " " + start);
 	if (icon != lastCalendar.calCurIcon || text != lastCalendar.calCurText || start != lastCalendar.calCurStart) {
 		lastCalendar.calCurText = text;
 		lastCalendar.calCurIcon = icon;
 		lastCalendar.calCurStart = start;
-		console.log("sending " + JSON.stringify(lastCalendar));
+		console.log("sendCalendar " + JSON.stringify(lastCalendar));
 		Pebble.sendAppMessage(lastCalendar);
 	}
 }
@@ -126,8 +126,7 @@ function renderTime(s) {
 function tryCalendar() {
 	var response;
 	var req = new XMLHttpRequest();
-	console.log("requesting biib.json");
-	req.open('GET', "http://www.gutwin.org/ebw/biib.json", true);
+	req.open('GET', "http://www.gutwin.org/ebw/biib.json?cache=" + (Math.random() * 100000), true);
 	req.onload = function(e) {
 		if (req.readyState == 4) {
 			if(req.status == 200) {
@@ -137,12 +136,12 @@ function tryCalendar() {
 				for (var i = 0; i < response.mtgs.length; i++) {
 					var o = response.mtgs[i];
 					var now = new Date().getTime() / 1000;
-					console.log("now " + now + " " + (o.start - (120*60)) + " " + (o.start + (15*60)));
+					//console.log("now " + now + " " + (o.start - (120*60)) + " " + (o.start + (15*60)));
 					if ((o.start + (15 * 60)) > (now) && 
 						(o.start - (120 * 60)) < (now) &&
 						(o.start < best.start)) {
 						best.start = o.start;
-						best.text = o.subject + "\n" + renderTime(o.start) + "-" + o.location;
+						best.text = o.subject + "\n" + o.location + "\n" + renderTime(o.start);
 						if (o.icon == "lync") {
 							best.icon = 1;
 						} else {
@@ -165,13 +164,13 @@ function tryCalendar() {
 Pebble.addEventListener(
 	"ready",
 	function(e) {
-		console.log("connect! " + e.ready);
+		console.log("CONNECTION ESTABLISHED " + e.ready);
 	});
 
 Pebble.addEventListener(
 	"appmessage",
 	function(e) {
-		console.log("message!");
+		console.log("RECEIVED MESSAGE:");
 		console.log(JSON.stringify(e));
 		if (e.payload.wxGet) {
 			tryWeather(0);
