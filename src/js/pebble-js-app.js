@@ -137,8 +137,8 @@ function tryCalendar() {
 					var o = response.mtgs[i];
 					var now = new Date().getTime() / 1000;
 					//console.log("now " + now + " " + (o.start - (120*60)) + " " + (o.start + (15*60)));
-					if ((o.start + (15 * 60)) > (now) && 
-						(o.start - (120 * 60)) < (now) &&
+					if ((o.start + (13 * 60)) >= (now) && 
+						(o.start - (125 * 60)) <= (now) &&
 						(o.start < best.start)) {
 						best.start = o.start;
 						best.text = o.subject + "\n" + o.location + "\n" + renderTime(o.start);

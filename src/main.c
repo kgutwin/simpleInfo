@@ -1,8 +1,11 @@
 #include "pebble.h"
 
+///// DISABLE ALL DEBUGGING MESSAGES
+///// COMMENT THESE OUT FOR DEBUGGING
 #undef APP_LOG
 #define APP_LOG(level, fmt, args...)  ;
-	
+/////
+
 Window *window;
 TextLayer *text_date_layer;
 TextLayer *text_time_layer;
@@ -20,6 +23,7 @@ TextLayer *text_cal_info_layer;
 char text_cal_info_layer_value[64];
 
 uint8_t snooze_ticks_remain;
+uint8_t snoozing;
 
 static AppSync sync;
 #define SYNC_BUFFER_SIZE 256
@@ -109,15 +113,22 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 	}
 
 	text_layer_set_text(text_time_layer, time_text);
-	
-	// request calendar updates on the 15 minute mark
-	if ((tick_time->tm_min % 15) == 0) {
-		request_update(false, true);
-	}
-	// request weather updates on the two minute mark
-	if ((tick_time->tm_min % 2) == 0) {
-		if (layer_get_hidden(bitmap_layer_get_layer(cal_image_layer)))
-			request_update(true, false);
+
+	if (snoozing) {
+		// request calendar and weather updates hourly
+		if (tick_time->tm_min == 0) {
+			request_update(true, true);
+		}
+	} else {
+		// request calendar updates on the 15 minute mark
+		if ((tick_time->tm_min % 15) == 0) {
+			request_update(false, true);
+		}
+		// request weather updates on the two minute mark
+		if ((tick_time->tm_min % 2) == 0) {
+			if (layer_get_hidden(bitmap_layer_get_layer(cal_image_layer)))
+				request_update(true, false);
+		}
 	}
 }
 
@@ -138,22 +149,31 @@ void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	
 	// handle snooze
 	if (snooze_ticks_remain == 0) {
+		// Snooze transitions that happen long after we're out of snooze ticks.
 		if (tick_time->tm_min == 0 && tick_time->tm_sec <= 1) {
 			if (tick_time->tm_hour == 0) {
+				// Transition to snooze after midnight.
+				snoozing = true;
 				tick_timer_service_unsubscribe();
 				tick_timer_service_subscribe(MINUTE_UNIT, handle_second_tick);
 			} else if (tick_time->tm_hour == 6) {
+				// Transition out of snooze at 6:00 AM.
+				snoozing = false;
 				tick_timer_service_unsubscribe();
 				tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
 			}
 		}
 	} else if (snooze_ticks_remain == 1) {
+		// If we're between midnight and 6AM and we're just about to run out of
+		// snooze ticks, then go ahead and transition immediately to snooze.
 		if (tick_time->tm_hour < 6) {
+			snoozing = true;
 			tick_timer_service_unsubscribe();
 			tick_timer_service_subscribe(MINUTE_UNIT, handle_second_tick);
 		}
 		snooze_ticks_remain--;
 	} else {
+		// Tick tick tick...
 		snooze_ticks_remain--;
 	}
 }
@@ -218,6 +238,7 @@ void handle_init(void) {
 	layer_add_child(window_layer, text_layer_get_layer(text_cal_info_layer));
 	
 	snooze_ticks_remain = 30;
+	snoozing = false;
 	tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
 
 	handle_minute_tick(NULL, YEAR_UNIT);
