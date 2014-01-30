@@ -12,12 +12,15 @@ var iconMap = {
 	'partly-cloudy-night': 10
 };
 
+// Store the last weather values we saw, so that we don't needlessly transmit 
+// updates over the bluetooth.
 var lastWeather = {
 	'icon': 0,
 	'temp': "",
 	'alerts': 0
 };
 
+// Attempt to send a weather update, if weather values have changed.
 function sendWeather(icon, temp, alerts) {
 	if (icon != lastWeather.icon || temp != lastWeather.temp || alerts != lastWeather.alerts) {
 		console.log("sendWeather chg " + icon + " " + temp + " " + alerts);
@@ -32,6 +35,8 @@ function sendWeather(icon, temp, alerts) {
 	}
 }
 
+// Called from locationSuccess, given our location, pull current weather
+// and send it along.
 function fetchWeather(latitude, longitude) {
 	var response;
 	var req = new XMLHttpRequest();
@@ -62,6 +67,7 @@ function fetchWeather(latitude, longitude) {
 				}
 			} else {
 				console.log("Error " + req.status);
+				// N/R = no response from Forecast.io
 				sendWeather(0, "N/R", 0);
 			}
 		}
@@ -69,30 +75,37 @@ function fetchWeather(latitude, longitude) {
 	req.send(null);
 }
 
+// Handle a successful location update
 function locationSuccess(pos) {
 	var coordinates = pos.coords;
 	console.log("locationSuccess " + coordinates.latitude + "," + coordinates.longitude);
 	fetchWeather(coordinates.latitude, coordinates.longitude);
 }
 
+// If we couldn't find our current location, update the screen to suit
 function locationError(err) {
 	console.warn('location error (' + err.code + '): ' + err.message);
+	// N/L = no location
 	sendWeather(0, "N/L", 0);
 }
 
 var locationOptions = { "timeout": 15000, "maximumAge": 60000 }; 
 
+// Call the geolocation api (needed for proper weather forecast) which,
+// if successful, will request and transmit weather data.
 function tryWeather() {
 	console.log("tryWeather");
 	navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
+// Store the last calendar data to avoid needless bluetooth communication.
 var lastCalendar = {
 	"calCurText": "",
 	"calCurIcon": -1,
 	"calCurStart": 0
 };
 
+// Send a calendar update, only if an update needs to be sent.
 function sendCalendar(icon, text, start) {
 	if (icon != lastCalendar.calCurIcon || text != lastCalendar.calCurText || start != lastCalendar.calCurStart) {
 		lastCalendar.calCurText = text;
@@ -103,6 +116,7 @@ function sendCalendar(icon, text, start) {
 	}
 }
 
+// Given a UNIX time, convert it into hh:mm with 'a' or 'p' for am/pm
 function renderTime(s) {
 	var date = new Date(s * 1000);
 	var hh = date.getHours();
@@ -116,6 +130,8 @@ function renderTime(s) {
 	return hh + ":" + mm + ampm;
 }
 
+// Attempt to retrieve current calendar information, and push data to
+// watch if found.
 function tryCalendar() {
 	var response;
 	var req = new XMLHttpRequest();
@@ -153,12 +169,14 @@ function tryCalendar() {
 	req.send(null);
 }
 
+// Initialize application
 Pebble.addEventListener(
 	"ready",
 	function(e) {
 		console.log("CONNECTION ESTABLISHED " + e.ready);
 	});
 
+// Handle incoming AppMessages, dispatch to try* functions as appropriate.
 Pebble.addEventListener(
 	"appmessage",
 	function(e) {

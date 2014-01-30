@@ -62,6 +62,9 @@ uint8_t cal_image_map[] = {
 	RESOURCE_ID_IMAGE_CAL_LYNC
 };
 
+// Originally a boring line drawing function, this now draws two rectangles. 
+// The first is a single pixel high but spans the width of the screen. The
+// second is two pixels high and the width is defined by the battery charge.
 void line_layer_update_callback(Layer *layer, GContext* ctx) {
 	graphics_context_set_fill_color(ctx, GColorWhite);
 	GRect bounds = layer_get_bounds(layer);
@@ -75,6 +78,8 @@ void line_layer_update_callback(Layer *layer, GContext* ctx) {
 	graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 }
 
+// Update time and date text layers, and request data feed updates if time
+// cycles require.
 void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 	if (tick_time == NULL) {
 		time_t now = time(NULL);
@@ -129,8 +134,14 @@ void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
 	}
 }
 
+// Used in handle_second_tick, for determining when to trigger handle_minute_tick()
 static int last_minute = -1;
 
+// Perform icon animations (if needed), trigger handle_minute_tick() when
+// appropriate, and transition in and out of snooze.
+// Note that during snoozing, even though the period changes to per-minute,
+// the timer service still calls this function, so that snooze transitions
+// are still handled.
 void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	if (wx_image_layer_animate) {
 		wx_image->bounds.origin.x = (tick_time->tm_sec % 10) * 40;
@@ -139,8 +150,8 @@ void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 		layer_mark_dirty(wx_image_layer_layer);
 	}
 	
-	if (tick_time->tm_min != last_minute) {
-		last_minute = tick_time->tm_min;
+	if (tick_time->tm_min + (tick_time->tm_hour * 60) != last_minute) {
+		last_minute = tick_time->tm_min + (tick_time->tm_hour * 60);
 		handle_minute_tick(tick_time, units_changed);
 	}
 	
@@ -175,6 +186,7 @@ void handle_second_tick(struct tm *tick_time, TimeUnits units_changed) {
 	}
 }
 
+// Called on app clean shutdown, frees all known allocated memory.
 void handle_deinit(void) {
 	tick_timer_service_unsubscribe();
 	gbitmap_destroy(wx_image);
@@ -189,6 +201,7 @@ void handle_deinit(void) {
 	window_destroy(window);
 }
 
+// Window and layer setup.
 void handle_init(void) {
 	window = window_create();
 	window_stack_push(window, true /* Animated */);
@@ -196,51 +209,63 @@ void handle_init(void) {
 
 	Layer *window_layer = window_get_root_layer(window);
 
+	// Date string (January 29)
 	text_date_layer = text_layer_create(GRect(8, 68, 144-8, 168-68));
 	text_layer_set_text_color(text_date_layer, GColorWhite);
 	text_layer_set_background_color(text_date_layer, GColorClear);
 	text_layer_set_font(text_date_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
 	layer_add_child(window_layer, text_layer_get_layer(text_date_layer));
 
+	// Time string (10:49)
 	text_time_layer = text_layer_create(GRect(7, 92, 144-7, 168-92));
 	text_layer_set_text_color(text_time_layer, GColorWhite);
 	text_layer_set_background_color(text_time_layer, GColorClear);
 	text_layer_set_font(text_time_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
 	layer_add_child(window_layer, text_layer_get_layer(text_time_layer));
 
+	// Line separator/battery meter
 	GRect line_frame = GRect(8, 97, 139, 2);
 	line_layer = layer_create(line_frame);
 	layer_set_update_proc(line_layer, line_layer_update_callback);
 	layer_add_child(window_layer, line_layer);
 
+	// Weather icon
 	wx_image_layer = bitmap_layer_create(GRect(8, 18, 40, 40));
 	bitmap_layer_set_alignment(wx_image_layer, GAlignCenter);
 	layer_add_child(window_layer, bitmap_layer_get_layer(wx_image_layer));
 	
+	// Weather temperature text
 	text_temp_layer = text_layer_create(GRect(58, 18, 144-58, 40));
 	text_layer_set_text_color(text_temp_layer, GColorWhite);
 	text_layer_set_background_color(text_temp_layer, GColorClear);
 	text_layer_set_font(text_temp_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
 	layer_add_child(window_layer, text_layer_get_layer(text_temp_layer));
 	
+	// Calendar icon (starts hidden)
 	cal_image_layer = bitmap_layer_create(GRect(8, 18, 40, 40));
 	bitmap_layer_set_alignment(cal_image_layer, GAlignCenter);
 	layer_set_hidden(bitmap_layer_get_layer(cal_image_layer), true);
 	layer_add_child(window_layer, bitmap_layer_get_layer(cal_image_layer));
 	
+	// Calendar text (starts empty)
 	text_cal_info_layer = text_layer_create(GRect(58, 4, 300, 60));
 	text_layer_set_text_color(text_cal_info_layer, GColorWhite);
 	text_layer_set_background_color(text_cal_info_layer, GColorClear);
 	text_layer_set_font(text_cal_info_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
 	layer_add_child(window_layer, text_layer_get_layer(text_cal_info_layer));
 	
+	// Preset snooze settings (tick 30 times before any snooze is initiated)
+	// and subscribe to the timer service
 	snooze_ticks_remain = 30;
 	snoozing = false;
 	tick_timer_service_subscribe(SECOND_UNIT, handle_second_tick);
 
+	// Draw the time immediately
 	handle_minute_tick(NULL, YEAR_UNIT);
 }
 
+// Send a message to the javascript code, either requesting a weather or a 
+// calendar update.
 void request_update(uint8_t wx, uint8_t cal) {
 	Tuplet wx_tuple = TupletInteger(MSG_WXGET, 1);
 	Tuplet cal_tuple = TupletInteger(MSG_CALGET, 1);
@@ -257,6 +282,8 @@ void request_update(uint8_t wx, uint8_t cal) {
 	app_message_outbox_send();
 }
 
+// Compare two arbitrary tuples, returning zero if equal, and either positive
+// or negative 1 depending on if the first is "greater" than the second.
 #define THREE_COMP(x,y) if((x)>(y))return 1;if((x)<(y))return -1;
 int8_t tuple_compare(const Tuple* a, const Tuple* b) {
 	THREE_COMP(a->key, b->key)
@@ -289,6 +316,7 @@ int8_t tuple_compare(const Tuple* a, const Tuple* b) {
 	return 0;
 }
 
+// Send a log message containing the content of the tuple.
 void tuple_log(const Tuple* t) {
 	switch (t->type) {
 		case TUPLE_CSTRING:
@@ -310,12 +338,19 @@ void tuple_log(const Tuple* t) {
 	}
 }
 
+// This is run both on initial AppSync startup as well as any time a message
+// is received with new tuple data.
 static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, const Tuple* old_tuple, void* context) {
+	// Frequently this function is called when the tuple value hasn't really
+	// changed. We skip this situation (if this isn't initialization time)
+	// so that we properly transition in and out of calendar mode.
 	if (old_tuple != NULL && tuple_compare(new_tuple, old_tuple) == 0)
 		return;
+	
 	tuple_log(new_tuple);
+	
 	switch (key) {
-		case MSG_WXCURICON:
+		case MSG_WXCURICON: // Weather icon update
 			if (wx_image) gbitmap_destroy(wx_image);
 			wx_image = gbitmap_create_with_resource(wx_image_map[new_tuple->value->uint8]);
 			wx_image->bounds.origin.x = 0;
@@ -324,29 +359,37 @@ static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tup
 			wx_image_layer_animate = (new_tuple->value->uint8 > 0);	
 			break;
 		
-		case MSG_WXCURTEMP:
+		case MSG_WXCURTEMP: // Weather temperature update
 			strcpy(text_temp_layer_value, new_tuple->value->cstring);
 			text_layer_set_text(text_temp_layer, text_temp_layer_value);
 			break;
 		
-		case MSG_CALCURICON:
+		case MSG_WXCURALERTS: // Weather alerts count update
+			// currently ignored
+			break;
+		
+		case MSG_CALCURICON: // Calendar icon update
 			if (new_tuple->value->int8 >= 0) {
+				// positive values mean icon is set
 				APP_LOG(APP_LOG_LEVEL_DEBUG, "enabling calendar icon");
 				if (cal_image) gbitmap_destroy(cal_image);
 				cal_image = gbitmap_create_with_resource(cal_image_map[new_tuple->value->int8]);
 				bitmap_layer_set_bitmap(cal_image_layer, cal_image);
+				// hide the weather icon and show the calendar icon
 				layer_set_hidden(bitmap_layer_get_layer(cal_image_layer), false);
 				layer_set_hidden(bitmap_layer_get_layer(wx_image_layer), true);
 			} else {
+				// negative values means icon is disabled
 				layer_set_hidden(bitmap_layer_get_layer(cal_image_layer), true);
 				layer_set_hidden(bitmap_layer_get_layer(wx_image_layer), false);
 			}
 			break;
 		
-		case MSG_CALCURTEXT:
+		case MSG_CALCURTEXT: // Calendar text update
 			strcpy(text_cal_info_layer_value, new_tuple->value->cstring);
 			text_layer_set_text(text_cal_info_layer, text_cal_info_layer_value);
 			if (strcmp("", new_tuple->value->cstring) == 0) {
+				// if there's text to be seen, hide the weather temperature layer
 				layer_set_hidden(text_layer_get_layer(text_cal_info_layer), true);
 				layer_set_hidden(text_layer_get_layer(text_temp_layer), false);
 			} else {
@@ -354,14 +397,19 @@ static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tup
 				layer_set_hidden(text_layer_get_layer(text_temp_layer), true);
 			}
 			break;
+		
+		case MSG_CALCURSTART: // Calendar start time update
+			// currently ignored
+			break;
 	}
 }
 
+// Called in case of problems with AppMessage.
 static void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d", app_message_error);
 }
 
-
+// Set up app sync, defining initial values for data parameters
 void app_message_init() {
 	Tuplet initial_values[] = {
 		TupletInteger(MSG_WXCURICON, 0),
@@ -380,10 +428,12 @@ void app_message_init() {
 	request_update(true, true);
 }
 
+// Tear down app sync
 void app_message_deinit() {
 	app_sync_deinit(&sync);
 }
 
+// Main entry point.
 int main(void) {
 	handle_init();
 	app_message_init();
