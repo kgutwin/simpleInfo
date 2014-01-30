@@ -82,15 +82,9 @@ function locationError(err) {
 
 var locationOptions = { "timeout": 15000, "maximumAge": 60000 }; 
 
-//var weatherIter = 0;
-function tryWeather(iter) {
-	console.log("tryWeather iter " + iter);
-	//if (iter === 0) iter = weatherIter;
-	//if (iter == weatherIter) {
-		navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
-		//setTimeout(function() { tryWeather( iter+1 ); }, 120000);
-		//weatherIter = iter + 1;
-	//}
+function tryWeather() {
+	console.log("tryWeather");
+	navigator.geolocation.getCurrentPosition(locationSuccess, locationError, locationOptions);
 }
 
 var lastCalendar = {
@@ -100,7 +94,6 @@ var lastCalendar = {
 };
 
 function sendCalendar(icon, text, start) {
-	//console.log("sendCalendar " + icon + " " + text + " " + start);
 	if (icon != lastCalendar.calCurIcon || text != lastCalendar.calCurText || start != lastCalendar.calCurStart) {
 		lastCalendar.calCurText = text;
 		lastCalendar.calCurIcon = icon;
@@ -136,7 +129,6 @@ function tryCalendar() {
 				for (var i = 0; i < response.mtgs.length; i++) {
 					var o = response.mtgs[i];
 					var now = new Date().getTime() / 1000;
-					//console.log("now " + now + " " + (o.start - (120*60)) + " " + (o.start + (15*60)));
 					if ((o.start + (13 * 60)) >= (now) && 
 						(o.start - (125 * 60)) <= (now) &&
 						(o.start < best.start)) {
@@ -173,7 +165,7 @@ Pebble.addEventListener(
 		console.log("RECEIVED MESSAGE:");
 		console.log(JSON.stringify(e));
 		if (e.payload.wxGet) {
-			tryWeather(0);
+			tryWeather();
 		}
 		if (e.payload.calGet) {
 			tryCalendar();

@@ -28,9 +28,6 @@ uint8_t snoozing;
 static AppSync sync;
 #define SYNC_BUFFER_SIZE 256
 static uint8_t sync_buffer[SYNC_BUFFER_SIZE];
-
-AppTimer *wx_resync_timer;
-#define WX_RESYNC_TIMEOUT_MS (1 * 60 * 1000)
 	
 enum messages_e {
 	MSG_WXCURTEMP = 11,
