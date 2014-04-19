@@ -51,6 +51,7 @@ function fetchWeather(latitude, longitude) {
 				if (response && response.currently) {
 					var weatherResult = response.currently;
 					temperature = Math.round(weatherResult.temperature);
+					temperature = 42;
 					if (weatherResult.icon in iconMap) {
 						iconInt = iconMap[weatherResult.icon];
 					} else {
@@ -130,34 +131,39 @@ function renderTime(s) {
 	return hh + ":" + mm + ampm;
 }
 
+function sendBestCalendar(cal) {
+	var best = { "icon":-1, "text": "", "start": 2147483647 };
+	for (var i = 0; i < cal.mtgs.length; i++) {
+		var o = cal.mtgs[i];
+		var now = new Date().getTime() / 1000;
+		if ((o.start + (13 * 60)) >= (now) && 
+			(o.start - (125 * 60)) <= (now) &&
+			(o.start < best.start)) {
+			best.start = o.start;
+			best.text = o.subject + "\n" + o.location + "\n" + renderTime(o.start);
+			if (o.icon == "lync") {
+				best.icon = 1;
+			} else {
+				best.icon = 0;
+			}
+		}
+	}
+	sendCalendar(best.icon, best.text, best.start);
+}
+
+var lastResponse = [];
+
 // Attempt to retrieve current calendar information, and push data to
 // watch if found.
 function tryCalendar() {
-	var response;
 	var req = new XMLHttpRequest();
 	req.open('GET', "http://www.gutwin.org/ebw/biib.json?cache=" + (Math.random() * 100000), true);
 	req.onload = function(e) {
 		if (req.readyState == 4) {
 			if(req.status == 200) {
 				console.log(req.responseText);
-				response = JSON.parse(req.responseText);
-				var best = { "icon":-1, "text": "", "start": 2147483647 };
-				for (var i = 0; i < response.mtgs.length; i++) {
-					var o = response.mtgs[i];
-					var now = new Date().getTime() / 1000;
-					if ((o.start + (13 * 60)) >= (now) && 
-						(o.start - (125 * 60)) <= (now) &&
-						(o.start < best.start)) {
-						best.start = o.start;
-						best.text = o.subject + "\n" + o.location + "\n" + renderTime(o.start);
-						if (o.icon == "lync") {
-							best.icon = 1;
-						} else {
-							best.icon = 0;
-						}
-					}
-				}
-				sendCalendar(best.icon, best.text, best.start);
+				lastResponse = JSON.parse(req.responseText);
+				sendBestCalendar(lastResponse);
 			} else {
 				console.log("Error " + req.status);
 				sendCalendar(-1, "", 0);
@@ -165,6 +171,11 @@ function tryCalendar() {
 		} else {
 			console.log("readyState " + req.readyState);
 		}
+	};
+	req.timeout = 15000;
+	req.ontimeout = function() {
+		console.log("timeout");
+		sendBestCalendar(lastResponse);
 	};
 	req.send(null);
 }
