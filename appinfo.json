@@ -18,6 +18,11 @@
     "resources": {
         "media": [
             {
+                "name": "IMAGE_WX_UNKNOWN",
+                "type": "png",
+                "file": "images/partsun-gray.png"
+            },
+            {
                 "name": "IMAGE_WX_CLEAR_DAY",
                 "type": "png",
                 "file": "images/sun-all.png"
@@ -72,11 +77,6 @@
                 "name": "IMAGE_WX_WIND",
                 "type": "png",
                 "file": "images/wind-all.png"
-            },
-            {
-                "name": "IMAGE_WX_UNKNOWN",
-                "type": "png",
-                "file": "images/partsun-hash.png"
             },
             {
                 "name": "IMAGE_CAL_LYNC",

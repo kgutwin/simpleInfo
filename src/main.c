@@ -235,7 +235,7 @@ void handle_init(void) {
 	layer_add_child(window_layer, bitmap_layer_get_layer(wx_image_layer));
 	
 	// Weather temperature text
-	text_temp_layer = text_layer_create(GRect(58, 18, 144-58, 40));
+	text_temp_layer = text_layer_create(GRect(56, 18, 144-56, 40));
 	text_layer_set_text_color(text_temp_layer, GColorWhite);
 	text_layer_set_background_color(text_temp_layer, GColorClear);
 	text_layer_set_font(text_temp_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
@@ -413,7 +413,7 @@ static void sync_error_callback(DictionaryResult dict_error, AppMessageResult ap
 void app_message_init() {
 	Tuplet initial_values[] = {
 		TupletInteger(MSG_WXCURICON, 0),
-		TupletCString(MSG_WXCURTEMP, "--°"),
+		TupletCString(MSG_WXCURTEMP, " --°"),
 		TupletInteger(MSG_WXCURALERTS, 0),
 		TupletInteger(MSG_CALCURICON, -1),
 		TupletCString(MSG_CALCURTEXT, ""),

@@ -26,7 +26,7 @@ function sendWeather(icon, temp, alerts) {
 		console.log("sendWeather chg " + icon + " " + temp + " " + alerts);
 		Pebble.sendAppMessage({
 			"wxCurIcon":icon,
-			"wxCurTemp":temp + "\u00B0",
+			"wxCurTemp":" "+temp + "\u00B0",
 			"wxCurAlerts":alerts
 		});
 		lastWeather.icon = icon;
@@ -51,7 +51,6 @@ function fetchWeather(latitude, longitude) {
 				if (response && response.currently) {
 					var weatherResult = response.currently;
 					temperature = Math.round(weatherResult.temperature);
-					temperature = 42;
 					if (weatherResult.icon in iconMap) {
 						iconInt = iconMap[weatherResult.icon];
 					} else {
