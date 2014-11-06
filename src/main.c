@@ -26,7 +26,7 @@ uint8_t snooze_ticks_remain;
 uint8_t snoozing;
 
 static AppSync sync;
-#define SYNC_BUFFER_SIZE 256
+#define SYNC_BUFFER_SIZE 512
 static uint8_t sync_buffer[SYNC_BUFFER_SIZE];
 	
 enum messages_e {
@@ -335,6 +335,18 @@ void tuple_log(const Tuple* t) {
 			if (t->length == 2) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int16:%u", t->key, t->value->uint16); }
 			if (t->length == 1) { APP_LOG(APP_LOG_LEVEL_DEBUG, "key:%lu int8:%u", t->key, t->value->uint8); }
 			break;
+	}
+}
+
+void sync_buffer_check() {
+	// doesn't really work :(
+	DictionaryIterator *iter = NULL;
+	
+	Tuple *t = dict_read_begin_from_buffer(iter, sync_buffer, sizeof(sync_buffer));
+	if (t == NULL) {
+		APP_LOG(APP_LOG_LEVEL_DEBUG, "dict_read_begin_from_buffer failed!");
+	} else {
+		APP_LOG(APP_LOG_LEVEL_DEBUG, "sync_buffer: %lu of %u", dict_size(iter), sizeof(sync_buffer));
 	}
 }
 

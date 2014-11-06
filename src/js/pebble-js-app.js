@@ -40,9 +40,12 @@ function sendWeather(icon, temp, alerts) {
 function fetchWeather(latitude, longitude) {
 	var response;
 	var req = new XMLHttpRequest();
-	req.open('GET', "http://api.forecast.io/forecast/1512d187338a135bfc8a2b5765c78e46/" +
-		latitude + "," + longitude + "?exclude=minutely,hourly,daily,flags", true);
+	var url = "https://api.forecast.io/forecast/1512d187338a135bfc8a2b5765c78e46/" +
+		latitude + "," + longitude + "?exclude=minutely,hourly,daily,flags";
+	console.log("GET " + url);
+	req.open('GET', url, true);
 	req.onload = function(e) {
+		console.log("weather onload");
 		if (req.readyState == 4) {
 			if(req.status == 200) {
 				console.log(req.responseText);
@@ -70,7 +73,13 @@ function fetchWeather(latitude, longitude) {
 				// N/R = no response from Forecast.io
 				sendWeather(0, "N/R", 0);
 			}
+		} else {
+			console.log("weather readyState " + req.readyState);
 		}
+	};
+	req.timeout = 60000;
+	req.ontimeout = function() {
+		console.log("timeout");
 	};
 	req.send(null);
 }
@@ -139,7 +148,7 @@ function sendBestCalendar(cal) {
 			(o.start - (125 * 60)) <= (now) &&
 			(o.start < best.start)) {
 			best.start = o.start;
-			best.text = o.subject + "\n" + o.location + "\n" + renderTime(o.start);
+			best.text = o.subject.trim().substr(0,16) + "\n" + o.location.trim().substr(0,16) + "\n" + renderTime(o.start);
 			if (o.icon == "lync") {
 				best.icon = 1;
 			} else {
@@ -168,7 +177,7 @@ function tryCalendar() {
 				sendCalendar(-1, "", 0);
 			}
 		} else {
-			console.log("readyState " + req.readyState);
+			console.log("calendar readyState " + req.readyState);
 		}
 	};
 	req.timeout = 15000;

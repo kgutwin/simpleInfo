@@ -1,99 +1,100 @@
 {
-    "versionCode": 1,
-    "versionLabel": "1.0",
     "appKeys": {
-        "wxCurTemp": 11,
-        "wxGet": 14,
-        "calCurText": 21,
-        "calCurStart": 23,
-        "wxCurAlerts": 13,
         "calCurIcon": 22,
+        "calCurStart": 23,
+        "calCurText": 21,
         "calGet": 24,
-        "wxCurIcon": 12
+        "wxCurAlerts": 13,
+        "wxCurIcon": 12,
+        "wxCurTemp": 11,
+        "wxGet": 14
     },
     "capabilities": [
         "location"
     ],
-    "uuid": "07b4be5b-2ecc-4fcd-88b4-90f18d195045",
+    "companyName": "kgutwin",
+    "longName": "Simple Info",
+    "projectType": "native",
     "resources": {
         "media": [
             {
+                "file": "images/partsun-gray.png",
                 "name": "IMAGE_WX_UNKNOWN",
-                "type": "png",
-                "file": "images/partsun-gray.png"
+                "type": "png"
             },
             {
+                "file": "images/sun-all.png",
                 "name": "IMAGE_WX_CLEAR_DAY",
-                "type": "png",
-                "file": "images/sun-all.png"
+                "type": "png"
             },
             {
+                "file": "images/menu_icon_simpleinfo.png",
                 "menuIcon": true,
                 "name": "MENU_ICON_SIMPLEINFO",
-                "type": "png",
-                "file": "images/menu_icon_simpleinfo.png"
+                "type": "png"
             },
             {
+                "file": "images/snow-all.png",
                 "name": "IMAGE_WX_SNOW",
-                "type": "png",
-                "file": "images/snow-all.png"
+                "type": "png"
             },
             {
+                "file": "images/cloud-all.png",
                 "name": "IMAGE_WX_CLOUDY",
-                "type": "png",
-                "file": "images/cloud-all.png"
+                "type": "png"
             },
             {
+                "file": "images/fog-all.png",
                 "name": "IMAGE_WX_FOG",
-                "type": "png",
-                "file": "images/fog-all.png"
+                "type": "png"
             },
             {
+                "file": "images/moon-all.png",
                 "name": "IMAGE_WX_CLEAR_NIGHT",
-                "type": "png",
-                "file": "images/moon-all.png"
+                "type": "png"
             },
             {
+                "file": "images/partmoon-all.png",
                 "name": "IMAGE_WX_PARTLY_CLOUDY_NIGHT",
-                "type": "png",
-                "file": "images/partmoon-all.png"
+                "type": "png"
             },
             {
+                "file": "images/partsun-all.png",
                 "name": "IMAGE_WX_PARTLY_CLOUDY_DAY",
-                "type": "png",
-                "file": "images/partsun-all.png"
+                "type": "png"
             },
             {
+                "file": "images/rain-all.png",
                 "name": "IMAGE_WX_RAIN",
-                "type": "png",
-                "file": "images/rain-all.png"
+                "type": "png"
             },
             {
+                "file": "images/sleet-all.png",
                 "name": "IMAGE_WX_SLEET",
-                "type": "png",
-                "file": "images/sleet-all.png"
+                "type": "png"
             },
             {
+                "file": "images/wind-all.png",
                 "name": "IMAGE_WX_WIND",
-                "type": "png",
-                "file": "images/wind-all.png"
+                "type": "png"
             },
             {
+                "file": "images/lync-icon.png",
                 "name": "IMAGE_CAL_LYNC",
-                "type": "png",
-                "file": "images/lync-icon.png"
+                "type": "png"
             },
             {
+                "file": "images/meeting-icon.png",
                 "name": "IMAGE_CAL_MEETING",
-                "type": "png",
-                "file": "images/meeting-icon.png"
+                "type": "png"
             }
         ]
     },
-    "longName": "Simple Info",
+    "shortName": "Simple Info",
+    "uuid": "07b4be5b-2ecc-4fcd-88b4-90f18d195045",
+    "versionCode": 1,
+    "versionLabel": "1.0",
     "watchapp": {
         "watchface": true
-    },
-    "companyName": "kgutwin",
-    "shortName": "Simple Info"
+    }
 }
