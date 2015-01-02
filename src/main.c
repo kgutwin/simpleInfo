@@ -421,6 +421,10 @@ static void sync_error_callback(DictionaryResult dict_error, AppMessageResult ap
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "App Message Sync Error: %d", app_message_error);
 }
 
+void request_initial(void* nothing) {
+	request_update(true, true);
+}
+
 // Set up app sync, defining initial values for data parameters
 void app_message_init() {
 	Tuplet initial_values[] = {
@@ -437,7 +441,8 @@ void app_message_init() {
 	// init buffers
 	app_message_open(sizeof(sync_buffer), sizeof(sync_buffer));
 	// send initial weather request
-	request_update(true, true);
+	app_timer_register(1000, request_initial, NULL);
+	//request_update(true, true);
 }
 
 // Tear down app sync
