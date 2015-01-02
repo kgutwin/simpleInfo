@@ -18,6 +18,11 @@
     "resources": {
         "media": [
             {
+                "file": "images/walk-icon.png",
+                "name": "IMAGE_CAL_WALK",
+                "type": "png"
+            },
+            {
                 "file": "images/partsun-gray.png",
                 "name": "IMAGE_WX_UNKNOWN",
                 "type": "png"

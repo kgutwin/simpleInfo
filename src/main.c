@@ -59,7 +59,8 @@ uint8_t wx_image_map[] = {
 
 uint8_t cal_image_map[] = {
 	RESOURCE_ID_IMAGE_CAL_MEETING,
-	RESOURCE_ID_IMAGE_CAL_LYNC
+	RESOURCE_ID_IMAGE_CAL_LYNC,
+	RESOURCE_ID_IMAGE_CAL_WALK
 };
 
 // Originally a boring line drawing function, this now draws two rectangles. 

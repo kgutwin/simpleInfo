@@ -151,6 +151,8 @@ function sendBestCalendar(cal) {
 			best.text = o.subject.trim().substr(0,16) + "\n" + o.location.trim().substr(0,16) + "\n" + renderTime(o.start);
 			if (o.icon == "lync") {
 				best.icon = 1;
+			} else if (o.icon == "walk") {
+				best.icon = 2;
 			} else {
 				best.icon = 0;
 			}
